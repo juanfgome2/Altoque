@@ -1,0 +1,19 @@
+﻿{
+    "name":  "altoque",
+    "version":  "1.0.0",
+    "description":  "Aplicación web local de mandados y delivery para conectar clientes, deliverys y administradores.",
+    "main":  "app.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "devDependencies":  {
+                            "@capacitor/android":  "^8.4.1",
+                            "@capacitor/cli":  "^8.4.1",
+                            "@capacitor/core":  "^8.4.1"
+                        }
+}

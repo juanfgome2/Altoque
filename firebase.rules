@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function role() {
+      return userDoc().data.role;
+    }
+
+    function isAdmin() {
+      return signedIn() && role() == "admin";
+    }
+
+    function isOrderParticipant(order) {
+      return signedIn() && (
+        order.data.clientId == request.auth.uid ||
+        order.data.deliveryId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+
+    function changedOrderKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function isClientCancelOrder() {
+      return signedIn() &&
+        resource.data.clientId == request.auth.uid &&
+        resource.data.status == "new" &&
+        request.resource.data.status == "cancelled" &&
+        changedOrderKeys().hasOnly(["status", "updatedAt"]);
+    }
+
+    function isClientRateOrder() {
+      return signedIn() &&
+        resource.data.clientId == request.auth.uid &&
+        resource.data.status == "completed" &&
+        request.resource.data.status == "completed" &&
+        changedOrderKeys().hasOnly(["rating", "ratedAt"]);
+    }
+
+    function isOrderChatMetadataUpdate() {
+      return isOrderParticipant(resource) &&
+        changedOrderKeys().hasOnly(["lastMessageAt", "lastMessageSenderId", "lastMessageText", "updatedAt", "chatReadAt"]);
+    }
+
+    function isDeliveryWorkOrderUpdate() {
+      return signedIn() && role() == "delivery" && (
+        (
+          resource.data.status == "new" &&
+          request.resource.data.status == "accepted" &&
+          request.resource.data.deliveryId == request.auth.uid &&
+          changedOrderKeys().hasOnly(["status", "deliveryId", "deliveryName", "updatedAt"])
+        ) ||
+        (
+          resource.data.deliveryId == request.auth.uid &&
+          request.resource.data.deliveryId == request.auth.uid &&
+          request.resource.data.status in ["in_progress", "completed"] &&
+          changedOrderKeys().hasOnly(["status", "updatedAt"])
+        )
+      );
+    }
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn();
+      allow update: if isAdmin() || request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /orders/{orderId} {
+      allow create: if signedIn() && request.resource.data.clientId == request.auth.uid;
+      allow read: if signedIn();
+      allow update: if isAdmin() || isClientCancelOrder() || isClientRateOrder() || isOrderChatMetadataUpdate() || isDeliveryWorkOrderUpdate();
+      allow delete: if false;
+    }
+
+    match /messages/{messageId} {
+      allow create: if signedIn() && request.resource.data.senderId == request.auth.uid;
+      allow read: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
+
+

@@ -1,0 +1,583 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>ALTOQUE | Lo que necesites, al toque.</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/altoque-icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="Stylo.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" data-route="landing" aria-label="Ir al inicio">
+        <span class="brand-mark">A</span>
+        <span>
+          <strong>ALTOQUE</strong>
+          
+          <small>Lo que necesites, al toque.</small>
+        </span>
+      </button>
+
+      <nav id="mainNav" class="main-nav hidden" aria-label="Navegación principal"></nav>
+
+      <div class="topbar-actions">
+        <span id="sessionBadge" class="session-badge hidden"></span>
+        <button id="logoutBtn" class="icon-button hidden" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <main id="app" class="app-main">
+      <section id="loadingView" class="view loading-view">
+        <div class="loading-card">
+          <span class="brand-mark">A</span>
+          <h1>ALTOQUE</h1>
+          <p>Cargando...</p>
+        </div>
+      </section>
+      <section id="landingView" class="view landing-view hidden">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Mandados locales</p>
+            <h1>Altoque</h1>
+            
+           
+            <p class="hero-lead">Lo que necesites, al toque.</p>
+            <p class="hero-text">
+              Pedí compras, retiros, trámites simples y envíos dentro del pueblo .
+            </p>
+            <div class="hero-actions">
+              <button class="button button-primary" data-route="register" type="button">Crear cuenta</button>
+              <button class="button button-secondary" data-route="login" type="button">Iniciar sesión</button>
+            </div>
+          </div>
+          <div class="hero-panel" aria-label="Categorías disponibles">
+            <div class="quick-card pharmacy">Farmacia</div>
+            <div class="quick-card market">Supermercado</div>
+            <div class="quick-card kiosk">Kiosco</div>
+            <div class="quick-card hardware">Ferretería</div>
+            <div class="quick-card pets">Veterinaria</div>
+            <div class="quick-card package">Paquetes</div>
+          </div>
+        </div>
+
+        <section class="landing-band">
+          <article>
+            <span>1</span>
+            <h2>Pedís</h2>
+            <p>Describís el mandado, la dirección y cualquier indicación importante.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <h2>Se asigna</h2>
+            <p>Un delivery aprobado acepta el pedido y coordina todo por el chat interno.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <h2>Recibís</h2>
+            <p>Seguís el estado, cerrás el pedido y calificás la experiencia.</p>
+          </article>
+        </section>
+      </section>
+
+      <section id="authView" class="view auth-view hidden">
+        <div class="auth-card">
+          <div>
+            <p class="eyebrow" id="authEyebrow">Acceso</p>
+            <h1 id="authTitle">Iniciar sesión</h1>
+          </div>
+
+          <form id="loginForm" class="form-grid">
+            <label>
+              Correo electrónico
+              <input id="loginEmail" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              Contraseña
+              <span class="password-field">
+                <input id="loginPassword" type="password" autocomplete="current-password" required />
+                <button id="toggleLoginPassword" class="password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">👁️</button>
+              </span>
+            </label>
+            <button id="forgotPasswordBtn" class="text-button forgot-password-link" type="button">¿Olvidaste tu contraseña?</button>
+            <button class="button button-primary" type="submit">Ingresar</button>
+            <button class="text-button" data-route="register" type="button">No tengo cuenta</button>
+          </form>
+
+          <form id="registerForm" class="form-grid hidden">
+            <label>
+              Nombre completo
+              <input id="registerName" type="text" autocomplete="name" required />
+            </label>
+            <label>
+              Correo electrónico
+              <input id="registerEmail" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              Contraseña
+              <input id="registerPassword" type="password" minlength="6" autocomplete="new-password" required />
+            </label>
+            <fieldset class="role-picker">
+              <legend>Tipo de usuario</legend>
+              <label><input type="radio" name="registerRole" value="cliente" checked /> Cliente</label>
+              <label><input type="radio" name="registerRole" value="delivery" /> Delivery</label>
+            </fieldset>
+            <button class="button button-primary" type="submit">Crear cuenta</button>
+            <button class="text-button" data-route="login" type="button">Ya tengo cuenta</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="view dashboard-view hidden">
+        <aside class="sidebar">
+          <div>
+            <p class="eyebrow">Panel</p>
+            <h2 id="panelTitle">Inicio</h2>
+          </div>
+          <div id="sideNav" class="side-nav"></div>
+          <section id="profileCard" class="profile-card hidden">
+            <div id="profileAvatar" class="avatar avatar-lg" aria-hidden="true">A</div>
+            <div class="profile-card-info">
+              <strong id="profileName">Usuario</strong>
+              <span id="profileRole">Perfil</span>
+            </div>
+            <form id="profilePhotoForm" class="profile-photo-form">
+              <label class="button button-secondary profile-photo-button" for="profilePhotoInput">Cambiar foto</label>
+              <input id="profilePhotoInput" class="sr-only" type="file" accept="image/*" />
+              <button id="deleteProfilePhotoBtn" class="button button-danger hidden" type="button">Eliminar foto</button>
+            </form>
+          </section>
+          <section id="clientRankingSidebar" class="client-ranking-sidebar hidden" aria-label="Ranking de deliveries">
+            <div class="client-ranking-sidebar-title">🏆 Ranking</div>
+            <p class="ranking-note">Mínimo 5 calificaciones</p>
+            <div id="deliveryRanking" class="client-ranking-list"></div>
+          </section>
+        </aside>
+
+        <section class="workspace">
+          <section id="clientPanel" class="panel hidden">
+            <div class="panel-header client-new-order-header">
+              <div>
+                <p class="eyebrow">Cliente</p>
+                <h2>Nuevo pedido</h2>
+              </div>
+              <button id="clientNotificationsBtn" class="button button-secondary" type="button">Activar notificaciones</button>
+            </div>
+            <form id="orderForm" class="surface form-grid client-new-order-form">
+              <div class="form-row">
+                <label>
+                  Categoría
+                  <select id="orderCategory" required>
+                    <option value="Farmacia">Farmacia</option>
+                    <option value="Kiosco">Kiosco</option>
+                    <option value="Supermercado">Supermercado</option>
+                    <option value="Ferretería">Ferretería</option>
+                    <option value="Veterinaria">Veterinaria</option>
+                    <option value="Retiro de paquetes">Retiro de paquetes</option>
+                    <option value="Trámite simple">Trámite simple</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </label>
+                <label>
+                  Prioridad
+                  <select id="orderPriority" required>
+                    <option value="normal">Normal</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Detalle del mandado
+                <textarea id="orderDescription" rows="4" placeholder="Ej. Comprar leche, pan y shampoo. Si no hay marca, consultar por chat." required></textarea>
+              </label>
+              <label>
+                Dirección de entrega
+                <input id="orderAddress" type="text" placeholder="Calle, número y referencia" required />
+              </label>
+              <label>
+                Observaciones
+                <textarea id="orderNotes" rows="2" placeholder="Horarios, punto de referencia o indicaciones."></textarea>
+              </label>
+              <button class="button button-primary" type="submit">Crear pedido</button>
+            </form>
+            <div class="panel-section stores-preview-section">
+              <div class="section-title">
+                <div>
+                  <h3>Comercios</h3>
+                  <p class="meta">Consultá comercios útiles antes de crear tu pedido.</p>
+                </div>
+              </div>
+              <div id="clientStoresPreview" class="card-grid"></div>
+            </div>
+            <div class="panel-section client-orders-section">
+              <div class="section-title client-active-orders-title">
+                <h3>Mis pedidos</h3>
+              </div>
+              <div class="order-tabs" role="tablist" aria-label="Mis pedidos">
+                <button class="order-tab active" type="button" data-order-tab="client-in-progress">En curso <span id="clientActiveCount" class="count-pill">0</span></button>
+                <button class="order-tab" type="button" data-order-tab="client-history">Historial <span id="clientHistoryCount" class="count-pill">0</span></button>
+              </div>
+              <div id="clientTabbedOrders" class="card-grid"></div>
+              <div id="clientActiveOrders" class="card-grid hidden"></div>
+              <div id="clientHistoryOrders" class="card-grid hidden"></div>
+            </div>
+
+          </section>
+
+          <section id="deliveryPanel" class="panel hidden">
+            <div class="panel-header delivery-available-header">
+              <div>
+                <p class="eyebrow">Delivery</p>
+                <h2>Pedidos disponibles</h2>
+                <p id="deliveryReputation" class="delivery-reputation">⭐ Sin calificaciones todavía</p>
+              </div>
+              <div class="delivery-action-group">
+                <button id="availabilityBtn" class="button button-primary" type="button">Activar disponibilidad</button>
+                <button id="notificationsBtn" class="button button-secondary" type="button">Activar notificaciones</button>
+              </div>
+            </div>
+            <div id="deliveryApprovalNotice" class="notice hidden"></div>
+            <div id="deliverySubscriptionNotice" class="notice subscription-work-notice hidden">
+              <p id="deliverySubscriptionMessage">Tu suscripción no está activa. Para volver a recibir pedidos, comunicate con el administrador.</p>
+              <button id="deliverySubscriptionWhatsapp" class="button button-secondary" type="button">Contactar por WhatsApp</button>
+            </div>            <div class="panel-section delivery-orders-section">
+              <div class="section-title delivery-my-orders-title">
+                <h3>Pedidos</h3>
+              </div>
+              <div class="order-tabs" role="tablist" aria-label="Pedidos del delivery">
+                <button id="deliveryAvailableTab" class="order-tab" type="button" data-order-tab="delivery-available">Disponibles <span id="availableCount" class="count-pill">0</span></button>
+                <button id="deliveryInProgressTab" class="order-tab active" type="button" data-order-tab="delivery-in-progress">En curso <span id="deliveryInProgressCount" class="count-pill">0</span></button>
+                <button id="deliveryHistoryTab" class="order-tab" type="button" data-order-tab="delivery-history">Historial <span id="deliveryMineCount" class="count-pill">0</span></button>
+              </div>
+              <div id="deliveryTabbedOrders" class="card-grid"></div>
+              <div id="availableOrders" class="card-grid hidden"></div>
+              <div id="deliveryOrders" class="card-grid hidden"></div>
+            </div>
+          </section>
+
+
+          <section id="storesPanel" class="panel hidden">
+            <div class="panel-header stores-header">
+              <div>
+                <p class="eyebrow">Comercios</p>
+                <h2>Comercios</h2>
+                <p class="meta">Listado de comercios para contactar por WhatsApp cuando lo necesites.</p>
+              </div>
+            </div>
+
+            <div id="storeAdminControls" class="panel-section hidden">
+              <div class="section-title">
+                <div>
+                  <h3>Administrar comercios</h3>
+                  <p class="meta">Agregá, editá o eliminá comercios disponibles.</p>
+                </div>
+              </div>
+              <form id="storeForm" class="surface form-grid store-form">
+                <div class="form-row">
+                  <label>
+                    Nombre del comercio
+                    <input id="storeName" type="text" placeholder="Ej. Farmacia Central" required />
+                  </label>
+                  <label>
+                    Rubro/categoría
+                    <input id="storeCategory" type="text" placeholder="Ej. Farmacia" required />
+                  </label>
+                </div>
+                <label>
+                  Dirección opcional
+                  <input id="storeAddress" type="text" placeholder="Calle, número o referencia" />
+                </label>
+                <label>
+                  Número de WhatsApp
+                  <input id="storeWhatsapp" type="tel" placeholder="Ej. 5493804588261" required />
+                </label>
+                <div class="card-actions">
+                  <button id="storeSubmitBtn" class="button button-primary" type="submit">Guardar comercio</button>
+                  <button id="storeCancelEditBtn" class="button button-secondary hidden" type="button">Cancelar edición</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="panel-section">
+              <div class="section-title">
+                <h3>Listado de comercios</h3>
+                <span id="storeCount" class="count-pill">0</span>
+              </div>
+              <div id="storesList" class="card-grid"></div>
+            </div>
+          </section>
+          <section id="chatPanel" class="panel hidden">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Chat interno</p>
+                <h2>Conversaciones</h2>
+              </div>
+            </div>
+            <div class="chat-layout">
+              <div id="chatList" class="chat-list surface"></div>
+              <div class="chat-room surface">
+                <div class="chat-room-header">
+                  <div>
+                    <h3 id="chatTitle">Seleccioná un pedido</h3>
+                    <p id="chatSubtitle">Toda la coordinación queda dentro de ALTOQUE.</p>
+                  </div>
+                </div>
+                <div id="messagesList" class="messages-list"></div>
+                <form id="messageForm" class="message-form">
+                  <input id="messageInput" type="text" placeholder="Escribí un mensaje..." autocomplete="off" disabled required />
+                  <button id="sendMessageBtn" class="button button-primary" type="submit" disabled>Enviar</button>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section id="adminPanel" class="panel hidden">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Administrador</p>
+                <h2>Control general</h2>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <article class="stat-card"><span>Usuarios</span><strong id="statUsers">0</strong></article>
+              <article class="stat-card"><span>Pedidos activos</span><strong id="statActiveOrders">0</strong></article>
+              <article class="stat-card"><span>Completados</span><strong id="statCompletedOrders">0</strong></article>
+              <article class="stat-card"><span>Ingresos estimados</span><strong id="statRevenue">$0</strong></article>
+            </div>
+            <div class="panel-section">
+              <div class="section-title">
+                <h3>Usuarios</h3>
+                <span id="adminUserCount" class="count-pill">0</span>
+              </div>
+              <div id="adminUsers" class="card-grid"></div>
+            </div>
+
+            <div id="subscriptionsAdminSection" class="panel-section subscriptions-admin-section">
+              <div class="section-title">
+                <div>
+                  <h3>Suscripciones</h3>
+                  <p class="meta">Estado de suscripción de todos los deliveries registrados.</p>
+                </div>
+                <span id="subscriptionCount" class="count-pill">0 deliveries</span>
+              </div>
+              <div class="surface subscriptions-table-card">
+                <div class="table-scroll">
+                  <table class="subscriptions-table">
+                    <thead>
+                      <tr>
+                        <th>Foto</th>
+                        <th>Nombre</th>
+                        <th>Plan</th>
+                        <th>Estado de la suscripción</th>
+                        <th>Fecha de vencimiento</th>
+                        <th>Administrar</th>
+                      </tr>
+                    </thead>
+                    <tbody id="subscriptionDeliveries"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-section plans-admin-section">
+              <details class="surface plans-section">
+                <summary>Planes</summary>
+                <p class="meta">Creá y revisá los planes disponibles. La asignación se agregará más adelante.</p>
+                <form id="subscriptionForm" class="compact-form plans-form">
+                  <input id="subscriptionName" type="text" placeholder="Nombre del plan" required />
+                  <input id="subscriptionPrice" type="number" min="0" step="100" placeholder="Precio mensual" required />
+                  <button class="button button-primary" type="submit">Guardar plan</button>
+                </form>
+                <div id="subscriptions" class="card-grid plans-list"></div>
+              </details>
+            </div>
+
+            <div class="panel-section">
+              <div class="section-title">
+                <h3>Deliverys pendientes</h3>
+                <span id="pendingDeliveryCount" class="count-pill">0</span>
+              </div>
+              <div id="pendingDeliveries" class="card-grid"></div>
+            </div>            <div class="panel-section admin-orders-section">
+              <div class="section-title">
+                <h3>Pedidos</h3>
+                <span id="adminOrderCount" class="count-pill">0</span>
+              </div>
+              <div class="order-tabs" role="tablist" aria-label="Pedidos administrados">
+                <button class="order-tab active" type="button" data-order-tab="admin-active">Activos <span id="adminActiveCount" class="count-pill">0</span></button>
+                <button class="order-tab" type="button" data-order-tab="admin-completed">Completados <span id="adminCompletedCount" class="count-pill">0</span></button>
+                <button class="order-tab" type="button" data-order-tab="admin-cancelled">Cancelados <span id="adminCancelledCount" class="count-pill">0</span></button>
+              </div>
+              <div id="adminTabbedOrders" class="card-grid"></div>
+              <div id="adminOrders" class="card-grid hidden"></div>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+
+  <div id="subscriptionModal" class="subscription-modal hidden" role="dialog" aria-modal="true" aria-labelledby="subscriptionModalTitle">
+    <div class="subscription-modal-card surface">
+      <div class="card-title">
+        <div>
+          <p class="eyebrow">Suscripción</p>
+          <h3 id="subscriptionModalTitle">Administrar delivery</h3>
+        </div>
+        <button id="subscriptionModalClose" class="icon-button" type="button" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <div id="subscriptionModalBody" class="subscription-modal-body"></div>
+      <div class="subscription-modal-actions">
+        <button class="button button-secondary" type="button" disabled>Asignar plan · Próximamente</button>
+        <button class="button button-secondary" type="button" disabled>Renovar · Próximamente</button>
+        <button class="button button-secondary" type="button" disabled>Cambiar vencimiento · Próximamente</button>
+        <button class="button button-danger" type="button" disabled>Dar de baja · Próximamente</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    window.ALTOQUE_FALLBACK_ROUTER = true;
+    window.ALTOQUE_AUTH_READY = false;
+
+    (function () {
+      const loadingView = document.getElementById("loadingView");
+      const landingView = document.getElementById("landingView");
+      const authView = document.getElementById("authView");
+      const dashboardView = document.getElementById("dashboardView");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const authEyebrow = document.getElementById("authEyebrow");
+      const authTitle = document.getElementById("authTitle");
+
+      function showPublicRoute(route) {
+        if (!window.ALTOQUE_AUTH_READY) {
+          loadingView.classList.remove("hidden");
+          landingView.classList.add("hidden");
+          authView.classList.add("hidden");
+          dashboardView.classList.add("hidden");
+          return;
+        }
+        const isAuth = route === "login" || route === "register";
+        const isRegister = route === "register";
+
+        loadingView.classList.add("hidden");
+        landingView.classList.toggle("hidden", route !== "landing");
+        authView.classList.toggle("hidden", !isAuth);
+        dashboardView.classList.add("hidden");
+
+        if (isAuth) {
+          loginForm.classList.toggle("hidden", isRegister);
+          registerForm.classList.toggle("hidden", !isRegister);
+          authEyebrow.textContent = isRegister ? "Registro" : "Acceso";
+          authTitle.textContent = isRegister ? "Crear cuenta" : "Iniciar sesión";
+        }
+      }
+
+      document.addEventListener("click", function (event) {
+        const target = event.target.closest("[data-route]");
+        if (!target) return;
+
+        const route = target.dataset.route;
+        if (route === "landing" || route === "login" || route === "register") {
+          event.preventDefault();
+          showPublicRoute(route);
+        }
+      });
+
+      window.ALTOQUE_SHOW_PUBLIC_ROUTE = showPublicRoute;
+    })();
+  </script>
+  <script type="module" src="./js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      let refreshing = false;
+
+      function showUpdateNotice() {
+        let notice = document.getElementById("pwaUpdateNotice");
+        if (!notice) {
+          notice = document.createElement("div");
+          notice.id = "pwaUpdateNotice";
+          notice.textContent = "Nueva versión disponible. Actualizando…";
+          notice.style.position = "fixed";
+          notice.style.left = "50%";
+          notice.style.bottom = "18px";
+          notice.style.transform = "translateX(-50%)";
+          notice.style.zIndex = "9999";
+          notice.style.padding = "12px 16px";
+          notice.style.borderRadius = "999px";
+          notice.style.background = "#16a34a";
+          notice.style.color = "#ffffff";
+          notice.style.font = "600 0.95rem system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+          notice.style.boxShadow = "0 16px 40px rgba(22, 163, 74, 0.28)";
+          document.body.appendChild(notice);
+        }
+        notice.classList.remove("hidden");
+      }
+
+      function activateWaitingWorker(worker) {
+        if (!worker) return;
+        showUpdateNotice();
+        worker.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing || sessionStorage.getItem("altoque-sw-refreshing") === "true") return;
+        refreshing = true;
+        sessionStorage.setItem("altoque-sw-refreshing", "true");
+        window.location.reload();
+      });
+
+      window.addEventListener("load", async () => {
+        try {
+          const registration = await navigator.serviceWorker.register("/service-worker.js");
+          sessionStorage.removeItem("altoque-sw-refreshing");
+
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            activateWaitingWorker(registration.waiting);
+          }
+
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                activateWaitingWorker(newWorker);
+              }
+            });
+          });
+
+          registration.update();
+        } catch (error) {
+          console.warn("No se pudo registrar el service worker:", error);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,9 @@
+﻿{
+    "appId":  "com.altoque.app",
+    "appName":  "ALTOQUE",
+    "webDir":  "www",
+    "server":  {
+                   "url":  "https://altoque-74f3d.web.app",
+                   "cleartext":  false
+               }
+}

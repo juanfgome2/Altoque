@@ -1,0 +1,121 @@
+﻿export const el = {
+  loadingView: document.getElementById("loadingView"),
+  landingView: document.getElementById("landingView"),
+  authView: document.getElementById("authView"),
+  dashboardView: document.getElementById("dashboardView"),
+  mainNav: document.getElementById("mainNav"),
+  sideNav: document.getElementById("sideNav"),
+  profileCard: document.getElementById("profileCard"),
+  profilePhotoForm: document.getElementById("profilePhotoForm"),
+  profilePhotoInput: document.getElementById("profilePhotoInput"),
+  deleteProfilePhotoBtn: document.getElementById("deleteProfilePhotoBtn"),
+  profileAvatar: document.getElementById("profileAvatar"),
+  profileName: document.getElementById("profileName"),
+  profileRole: document.getElementById("profileRole"),
+  panelTitle: document.getElementById("panelTitle"),
+  sessionBadge: document.getElementById("sessionBadge"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  authEyebrow: document.getElementById("authEyebrow"),
+  authTitle: document.getElementById("authTitle"),
+  loginForm: document.getElementById("loginForm"),
+  loginEmail: document.getElementById("loginEmail"),
+  loginPassword: document.getElementById("loginPassword"),
+  toggleLoginPassword: document.getElementById("toggleLoginPassword"),
+  forgotPasswordBtn: document.getElementById("forgotPasswordBtn"),
+  registerForm: document.getElementById("registerForm"),
+  clientPanel: document.getElementById("clientPanel"),
+  clientNotificationsBtn: document.getElementById("clientNotificationsBtn"),
+  clientRankingSidebar: document.getElementById("clientRankingSidebar"),
+  deliveryPanel: document.getElementById("deliveryPanel"),
+  chatPanel: document.getElementById("chatPanel"),
+  storesPanel: document.getElementById("storesPanel"),
+  clientStoresPreview: document.getElementById("clientStoresPreview"),
+  storeAdminControls: document.getElementById("storeAdminControls"),
+  storeForm: document.getElementById("storeForm"),
+  storeName: document.getElementById("storeName"),
+  storeCategory: document.getElementById("storeCategory"),
+  storeAddress: document.getElementById("storeAddress"),
+  storeWhatsapp: document.getElementById("storeWhatsapp"),
+  storeSubmitBtn: document.getElementById("storeSubmitBtn"),
+  storeCancelEditBtn: document.getElementById("storeCancelEditBtn"),
+  storesList: document.getElementById("storesList"),
+  storeCount: document.getElementById("storeCount"),
+  adminPanel: document.getElementById("adminPanel"),
+  orderForm: document.getElementById("orderForm"),
+  clientTabbedOrders: document.getElementById("clientTabbedOrders"),
+  clientActiveOrders: document.getElementById("clientActiveOrders"),
+  clientHistoryOrders: document.getElementById("clientHistoryOrders"),
+  clientActiveCount: document.getElementById("clientActiveCount"),
+  clientHistoryCount: document.getElementById("clientHistoryCount"),
+  deliveryRanking: document.getElementById("deliveryRanking"),
+  deliveryTabbedOrders: document.getElementById("deliveryTabbedOrders"),
+  availabilityBtn: document.getElementById("availabilityBtn"),
+  notificationsBtn: document.getElementById("notificationsBtn"),
+  deliveryReputation: document.getElementById("deliveryReputation"),
+  deliveryApprovalNotice: document.getElementById("deliveryApprovalNotice"),
+  deliverySubscriptionNotice: document.getElementById("deliverySubscriptionNotice"),
+  deliverySubscriptionMessage: document.getElementById("deliverySubscriptionMessage"),
+  deliverySubscriptionWhatsapp: document.getElementById("deliverySubscriptionWhatsapp"),
+  availableOrders: document.getElementById("availableOrders"),
+  deliveryOrders: document.getElementById("deliveryOrders"),
+  deliveryAvailableTab: document.getElementById("deliveryAvailableTab"),
+  deliveryInProgressTab: document.getElementById("deliveryInProgressTab"),
+  deliveryHistoryTab: document.getElementById("deliveryHistoryTab"),
+  availableCount: document.getElementById("availableCount"),
+  deliveryMineCount: document.getElementById("deliveryMineCount"),
+  deliveryInProgressCount: document.getElementById("deliveryInProgressCount"),
+  chatList: document.getElementById("chatList"),
+  chatTitle: document.getElementById("chatTitle"),
+  chatSubtitle: document.getElementById("chatSubtitle"),
+  messagesList: document.getElementById("messagesList"),
+  messageForm: document.getElementById("messageForm"),
+  messageInput: document.getElementById("messageInput"),
+  sendMessageBtn: document.getElementById("sendMessageBtn"),
+  statUsers: document.getElementById("statUsers"),
+  statActiveOrders: document.getElementById("statActiveOrders"),
+  statCompletedOrders: document.getElementById("statCompletedOrders"),
+  statRevenue: document.getElementById("statRevenue"),
+  pendingDeliveries: document.getElementById("pendingDeliveries"),
+  pendingDeliveryCount: document.getElementById("pendingDeliveryCount"),
+  adminTabbedOrders: document.getElementById("adminTabbedOrders"),
+  adminOrders: document.getElementById("adminOrders"),
+  adminOrderCount: document.getElementById("adminOrderCount"),
+  adminActiveCount: document.getElementById("adminActiveCount"),
+  adminCompletedCount: document.getElementById("adminCompletedCount"),
+  adminCancelledCount: document.getElementById("adminCancelledCount"),
+  adminUsers: document.getElementById("adminUsers"),
+  adminUserCount: document.getElementById("adminUserCount"),
+  subscriptionForm: document.getElementById("subscriptionForm"),
+  subscriptionName: document.getElementById("subscriptionName"),
+  subscriptionPrice: document.getElementById("subscriptionPrice"),
+  subscriptions: document.getElementById("subscriptions"),
+  subscriptionDeliveries: document.getElementById("subscriptionDeliveries"),
+  subscriptionModal: document.getElementById("subscriptionModal"),
+  subscriptionModalClose: document.getElementById("subscriptionModalClose"),
+  subscriptionModalTitle: document.getElementById("subscriptionModalTitle"),
+  subscriptionModalBody: document.getElementById("subscriptionModalBody"),
+  subscriptionCount: document.getElementById("subscriptionCount"),
+  toast: document.getElementById("toast")
+};
+
+export function showToast(message) {
+  el.toast.textContent = message;
+  el.toast.classList.remove("hidden");
+  clearTimeout(el.toast.timer);
+  el.toast.timer = setTimeout(() => el.toast.classList.add("hidden"), 3200);
+}
+
+export function emptyState(text) {
+  const element = document.createElement("p");
+  element.className = "empty-state";
+  element.textContent = text;
+  return element;
+}
+
+
+
+
+
+
+
+

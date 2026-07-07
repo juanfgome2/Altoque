@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -168,6 +168,8 @@
               </div>
               <button id="clientNotificationsBtn" class="button button-secondary" type="button">Activar notificaciones</button>
             </div>
+            <div id="clientStatusNotice" class="notice hidden">Tu cuenta no está habilitada para crear pedidos. Comunicate con el administrador.</div>
+            <button id="clientStatusWhatsappBtn" class="button button-primary hidden" type="button">📲 Contactar por WhatsApp</button>
             <form id="orderForm" class="surface form-grid client-new-order-form">
               <div class="form-row">
                 <label>
@@ -192,13 +194,47 @@
                 </label>
               </div>
               <label>
-                Detalle del mandado
-                <textarea id="orderDescription" rows="4" placeholder="Ej. Comprar leche, pan y shampoo. Si no hay marca, consultar por chat." required></textarea>
+                ¿Qué necesitás que hagamos por vos?
+                <textarea id="orderDescription" rows="4" placeholder="Contanos todos los detalles. Podés pedir una compra, retirar un paquete, hacer un trámite o cualquier otro mandado." required></textarea>
               </label>
+              <div class="optional-photo-section">
+                <button id="toggleOrderImageBtn" class="optional-photo-toggle" type="button" aria-expanded="false" aria-controls="orderImagePanel">
+                  📷 ¿Querés agregar una foto para ayudar al delivery? <span>(Opcional)</span>
+                </button>
+                <div id="orderImagePanel" class="order-image-panel hidden">
+                  <p class="optional-photo-help">
+                    Solo agregá una foto si ayuda a explicar mejor el mandado.<br />
+                    Ejemplos:<br />
+                    • un producto específico<br />
+                    • un paquete<br />
+                    • un documento<br />
+                    • una receta médica
+                  </p>
+                  <label class="order-image-field">
+                    <span class="button button-secondary order-image-button">📷 Elegir foto</span>
+                    <input id="orderImage" type="file" accept="image/*" />
+                    <small>Máximo 5 MB. Podés usar cámara o galería.</small>
+                  </label>
+                  <div id="orderImagePreview" class="order-image-preview hidden">
+                    <img alt="Vista previa de la foto del pedido" />
+                    <button id="removeOrderImageBtn" class="button button-secondary" type="button">Eliminar foto</button>
+                  </div>
+                </div>
+              </div>
               <label>
                 Dirección de entrega
                 <input id="orderAddress" type="text" placeholder="Calle, número y referencia" required />
               </label>
+              <div class="form-grid two-columns">
+                <label>
+                  Método de pago
+                  <select id="orderPaymentMethod" required>
+                    <option value="cash">Efectivo</option>
+                    <option value="transfer">Transferencia</option>
+                    <option value="mercadopago">Mercado Pago</option>
+                  </select>
+                </label>
+              </div>
               <label>
                 Observaciones
                 <textarea id="orderNotes" rows="2" placeholder="Horarios, punto de referencia o indicaciones."></textarea>
@@ -355,6 +391,33 @@
                 <span id="adminUserCount" class="count-pill">0</span>
               </div>
               <div id="adminUsers" class="card-grid"></div>
+            </div>
+
+            <div class="panel-section client-admin-section">
+              <div class="section-title">
+                <div>
+                  <h3>Clientes</h3>
+                  <p class="meta">Administrá el estado y los pagos de clientes sin bloquear pedidos todavía.</p>
+                </div>
+                <span id="clientAdminCount" class="count-pill">0 clientes</span>
+              </div>
+              <div class="surface subscriptions-table-card">
+                <div class="table-scroll">
+                  <table class="subscriptions-table">
+                    <thead>
+                      <tr>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Pago</th>
+                        <th>Último pago</th>
+                        <th>Próximo vencimiento</th>
+                        <th>Administrar</th>
+                      </tr>
+                    </thead>
+                    <tbody id="clientAdminRows"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <div id="subscriptionsAdminSection" class="panel-section subscriptions-admin-section">
@@ -564,20 +627,4 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

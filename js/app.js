@@ -1,9 +1,10 @@
-﻿import { appSettings } from "./firebase-config.js";
+import { appSettings } from "./firebase-config.js";
 import { el, showToast } from "./dom.js";
 import { normalizeSnapshot } from "./format.js";
 import {
   renderAdminOrders,
   renderAdminUsers,
+  renderAdminClients,
   renderAvailableOrders,
   renderChatOrders,
   renderClientOrders,
@@ -41,7 +42,9 @@ const adminHandlers = {
   assignSubscription: (delivery, planId) => assignSubscription(delivery, planId),
   renewSubscription: (delivery, planId) => renewSubscription(delivery, planId),
   editStore: (store) => editStore(store),
-  removeStore: (store) => deleteStore(store)
+  removeStore: (store) => deleteStore(store),
+  updateClientStatus: (client, status) => updateClientStatus(client, status),
+  registerClientPayment: (client) => registerClientPayment(client)
 };
 
 bindRouteEvents();
@@ -168,6 +171,53 @@ function bindForms() {
     if (!requireServices()) return;
     await services.logoutAccount();
   });
+  const toggleOrderImageBtn = document.getElementById("toggleOrderImageBtn");
+  const orderImagePanel = document.getElementById("orderImagePanel");
+  const orderImagePreview = document.getElementById("orderImagePreview");
+  const removeOrderImageBtn = document.getElementById("removeOrderImageBtn");
+  let orderImagePreviewUrl = "";
+
+  function clearOrderImagePreview() {
+    if (orderImagePreviewUrl) {
+      URL.revokeObjectURL(orderImagePreviewUrl);
+      orderImagePreviewUrl = "";
+    }
+    if (el.orderImage) el.orderImage.value = "";
+    if (orderImagePreview) {
+      orderImagePreview.classList.add("hidden");
+      const previewImage = orderImagePreview.querySelector("img");
+      if (previewImage) previewImage.removeAttribute("src");
+    }
+  }
+
+  if (toggleOrderImageBtn && orderImagePanel) {
+    toggleOrderImageBtn.addEventListener("click", () => {
+      const shouldShow = orderImagePanel.classList.contains("hidden");
+      orderImagePanel.classList.toggle("hidden", !shouldShow);
+      toggleOrderImageBtn.setAttribute("aria-expanded", String(shouldShow));
+    });
+  }
+
+  if (el.orderImage && orderImagePreview) {
+    el.orderImage.addEventListener("change", () => {
+      if (orderImagePreviewUrl) URL.revokeObjectURL(orderImagePreviewUrl);
+      const file = el.orderImage.files?.[0];
+      const previewImage = orderImagePreview.querySelector("img");
+
+      if (!file || !previewImage) {
+        clearOrderImagePreview();
+        return;
+      }
+
+      orderImagePreviewUrl = URL.createObjectURL(file);
+      previewImage.src = orderImagePreviewUrl;
+      orderImagePreview.classList.remove("hidden");
+    });
+  }
+
+  if (removeOrderImageBtn) {
+    removeOrderImageBtn.addEventListener("click", clearOrderImagePreview);
+  }
 
   el.orderForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -181,7 +231,19 @@ function bindForms() {
       return;
     }
 
+    if (!isClientAllowedToCreateOrders(state.profile)) {
+      showToast("Tu cuenta no está habilitada para crear pedidos. Comunicate con el administrador.");
+      return;
+    }
+
     try {
+      const imageFile = el.orderImage?.files?.[0] || null;
+      let imageUrl = "";
+
+      if (imageFile) {
+        imageUrl = await services.uploadOrderImage(state.profile.id, imageFile);
+      }
+
       const payload = {
         clientId: state.profile.id,
         clientName: state.profile.name,
@@ -189,7 +251,9 @@ function bindForms() {
         priority: document.getElementById("orderPriority").value,
         description: document.getElementById("orderDescription").value.trim(),
         address: document.getElementById("orderAddress").value.trim(),
-        notes: document.getElementById("orderNotes").value.trim()
+        notes: document.getElementById("orderNotes").value.trim(),
+        paymentMethod: el.orderPaymentMethod?.value || "cash",
+        imageUrl
       };
 
       console.log("datos del pedido", payload);
@@ -197,6 +261,11 @@ function bindForms() {
       const result = await services.createOrder(payload);
       console.log("resultado Firestore crear pedido", result);
       el.orderForm.reset();
+      clearOrderImagePreview();
+      if (orderImagePanel && toggleOrderImageBtn) {
+        orderImagePanel.classList.add("hidden");
+        toggleOrderImageBtn.setAttribute("aria-expanded", "false");
+      }
       showToast("Pedido creado. Los deliverys disponibles ya pueden verlo.");
     } catch (error) {
       console.error("error de Firestore al crear pedido", error);
@@ -239,9 +308,16 @@ function bindForms() {
     el.deliveryHistoryTab.addEventListener("click", () => selectDeliveryOrderTab("history"));
   }
 
+  if (el.clientStatusWhatsappBtn) {
+    el.clientStatusWhatsappBtn.addEventListener("click", () => {
+      window.open("https://wa.me/543804588261?text=Hola%20Federico,%20ya%20me%20registr%C3%A9%20en%20ALTOQUE%20y%20quiero%20habilitar%20mi%20cuenta.", "_blank", "noopener");
+    });
+  }
+
   if (el.clientNotificationsBtn) {
     el.clientNotificationsBtn.addEventListener("click", async () => {
       if (!requireServices() || !state.profile || state.profile.role !== "cliente") return;
+
 
       try {
         const fcmToken = await services.enableNotifications(state.profile.id);
@@ -397,6 +473,7 @@ async function handleAuthChange(user) {
 
     state.authUser = user;
     state.profile = profile;
+    state.userProfiles = { [profile.id]: profile };
     state.activePanel = defaultPanelForRole(profile.role);
     renderDashboard(profile, state.activePanel);
     subscribeForRole(profile);
@@ -438,6 +515,11 @@ function subscribeForRole(profile) {
         profiles[delivery.id] = delivery;
         return profiles;
       }, {});
+      state.userProfiles = {
+        ...state.userProfiles,
+        ...state.deliveryProfiles,
+        [profile.id]: state.profile || profile
+      };
       renderDeliveryRanking(deliveries);
       if (state.orders) renderClientOrders(state.orders, orderHandlers);
     }));
@@ -450,17 +532,23 @@ function subscribeForRole(profile) {
     }));
 
     state.listeners.push(services.watchDeliveryOrders(profile.id, (snapshot) => {
-      renderDeliveryOrders(normalizeSnapshot(snapshot), orderHandlers);
+      state.deliveryOrders = normalizeSnapshot(snapshot);
+      renderDeliveryOrders(state.deliveryOrders, orderHandlers);
     }));
 
     state.listeners.push(services.watchAvailableOrders((snapshot) => {
       const currentProfile = state.profile || profile;
       const canAccept = currentProfile.status === "active" && currentProfile.available && canDeliveryWork(currentProfile);
-      renderAvailableOrders(normalizeSnapshot(snapshot), orderHandlers, canAccept);
+      state.availableOrders = normalizeSnapshot(snapshot);
+      renderAvailableOrders(state.availableOrders, orderHandlers, canAccept);
     }));
 
     state.listeners.push(services.watchUsers((snapshot) => {
       const users = normalizeSnapshot(snapshot);
+      state.userProfiles = users.reduce((profiles, user) => {
+        profiles[user.id] = user;
+        return profiles;
+      }, {});
       state.deliveryProfiles = users
         .filter((user) => user.role === "delivery")
         .reduce((profiles, delivery) => {
@@ -472,6 +560,10 @@ function subscribeForRole(profile) {
         state.profile = freshProfile;
         renderDashboard(freshProfile, state.activePanel);
       }
+      const currentProfile = state.profile || freshProfile || profile;
+      const canAccept = currentProfile.status === "active" && currentProfile.available && canDeliveryWork(currentProfile);
+      renderDeliveryOrders(state.deliveryOrders || [], orderHandlers);
+      renderAvailableOrders(state.availableOrders || [], orderHandlers, canAccept);
     }));
   }
 
@@ -481,6 +573,9 @@ function subscribeForRole(profile) {
       state.adminUsers = users;
       renderAdminUsers(users, adminHandlers);
       renderSubscriptions(state.adminUsers || [], state.subscriptions || [], adminHandlers);
+    }));
+    state.listeners.push(services.watchClients((snapshot) => {
+      renderAdminClients(normalizeSnapshot(snapshot), adminHandlers);
     }));
     state.listeners.push(services.watchAllOrders((snapshot) => {
       renderAdminOrders(normalizeSnapshot(snapshot), adminHandlers, appSettings.platformFee);
@@ -656,6 +751,46 @@ async function renewSubscription(delivery, planId) {
 }
 
 
+async function updateClientStatus(client, clientStatus) {
+  if (!requireServices() || state.profile?.role !== "admin") return;
+  try {
+    await services.updateClientStatus(client.id, clientStatus);
+    showToast("Estado del cliente actualizado.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function registerClientPayment(client) {
+  if (!requireServices() || state.profile?.role !== "admin") return;
+  const amountValue = prompt(`Monto pagado por ${client.name || "cliente"}`);
+  if (amountValue === null) return;
+  const amount = Number(String(amountValue).replace(/[^0-9.,]/g, "").replace(",", "."));
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast("Ingresá un monto válido.");
+    return;
+  }
+
+  const nextPaymentDueAt = prompt("Próximo vencimiento (YYYY-MM-DD). Dejalo vacío si no corresponde.");
+  if (nextPaymentDueAt === null) return;
+
+  if (nextPaymentDueAt && Number.isNaN(new Date(nextPaymentDueAt).getTime())) {
+    showToast("Ingresá una fecha válida con formato YYYY-MM-DD.");
+    return;
+  }
+
+  try {
+    await services.registerClientPayment(client, {
+      amount,
+      nextPaymentDueAt: nextPaymentDueAt || null,
+      createdBy: state.profile.id
+    });
+    showToast("Pago del cliente registrado.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
 function editStore(store) {
   if (state.profile?.role !== "admin") return;
   state.editingStoreId = store.id;
@@ -692,6 +827,9 @@ function resetStoreForm() {
 function normalizeWhatsappInput(value) {
   return String(value || "").replace(/\D/g, "");
 }
+function isClientAllowedToCreateOrders(profile) {
+  return (profile?.clientStatus || "active") === "active";
+}
 function canDeliveryWork(profile) {
   if (!profile || !profile.subscriptionPlanId || !profile.subscriptionExpiresAt) return false;
   const expiresAt = profile.subscriptionExpiresAt.toDate
@@ -722,7 +860,8 @@ function updateUnreadChats(orders = []) {
 
 function isUnreadChat(order, uid) {
   if (!order.lastMessageAt || order.lastMessageSenderId === uid) return false;
-  const readAt = order.chatReadAt && order.chatReadAt[uid];
+  const chatReadAt = order.chatReadAt && typeof order.chatReadAt === "object" ? order.chatReadAt : {};
+  const readAt = chatReadAt[uid];
   return toMillis(order.lastMessageAt) > toMillis(readAt);
 }
 
@@ -742,6 +881,4 @@ function toMillis(value) {
   if (typeof value.toDate === "function") return value.toDate().getTime();
   return new Date(value).getTime() || 0;
 }
-
-
 

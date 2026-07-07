@@ -1,4 +1,4 @@
-﻿export const el = {
+export const el = {
   loadingView: document.getElementById("loadingView"),
   landingView: document.getElementById("landingView"),
   authView: document.getElementById("authView"),
@@ -25,6 +25,8 @@
   registerForm: document.getElementById("registerForm"),
   clientPanel: document.getElementById("clientPanel"),
   clientNotificationsBtn: document.getElementById("clientNotificationsBtn"),
+  clientStatusNotice: document.getElementById("clientStatusNotice"),
+  clientStatusWhatsappBtn: document.getElementById("clientStatusWhatsappBtn"),
   clientRankingSidebar: document.getElementById("clientRankingSidebar"),
   deliveryPanel: document.getElementById("deliveryPanel"),
   chatPanel: document.getElementById("chatPanel"),
@@ -42,6 +44,8 @@
   storeCount: document.getElementById("storeCount"),
   adminPanel: document.getElementById("adminPanel"),
   orderForm: document.getElementById("orderForm"),
+  orderImage: document.getElementById("orderImage"),
+  orderPaymentMethod: document.getElementById("orderPaymentMethod"),
   clientTabbedOrders: document.getElementById("clientTabbedOrders"),
   clientActiveOrders: document.getElementById("clientActiveOrders"),
   clientHistoryOrders: document.getElementById("clientHistoryOrders"),
@@ -85,6 +89,8 @@
   adminCancelledCount: document.getElementById("adminCancelledCount"),
   adminUsers: document.getElementById("adminUsers"),
   adminUserCount: document.getElementById("adminUserCount"),
+  clientAdminRows: document.getElementById("clientAdminRows"),
+  clientAdminCount: document.getElementById("clientAdminCount"),
   subscriptionForm: document.getElementById("subscriptionForm"),
   subscriptionName: document.getElementById("subscriptionName"),
   subscriptionPrice: document.getElementById("subscriptionPrice"),
@@ -111,11 +117,4 @@ export function emptyState(text) {
   element.textContent = text;
   return element;
 }
-
-
-
-
-
-
-
 

@@ -1,4 +1,4 @@
-﻿
+
 
 
 
@@ -82,6 +82,23 @@ export function createOrder(payload) {
       console.error("error de Firestore al crear pedido", error);
       throw error;
     });
+}
+
+export async function uploadOrderImage(uid, file) {
+  const maxSize = 5 * 1024 * 1024;
+
+  if (!file) return "";
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Seleccioná una imagen válida.");
+  }
+  if (file.size > maxSize) {
+    throw new Error("La imagen no puede superar los 5 MB.");
+  }
+
+  const safeName = file.name.replace(/[^a-z0-9.-]/gi, "-").toLowerCase();
+  const imageRef = storageApi.ref(storage, `orderImages/${uid}/${Date.now()}-${safeName}`);
+  await storageApi.uploadBytes(imageRef, file, { contentType: file.type });
+  return storageApi.getDownloadURL(imageRef);
 }
 
 export function acceptOrder(orderId, delivery) {
@@ -183,8 +200,8 @@ export async function enableNotifications(uid) {
     throw new Error("Necesitás permitir las notificaciones para recibir pedidos.");
   }
 
-  const serviceWorkerRegistration = await navigator.serviceWorker.ready;
   const messaging = messagingApi.getMessaging(firebaseApp);
+  const serviceWorkerRegistration = await registerFirebaseMessagingWorker();
   const fcmToken = await messagingApi.getToken(messaging, {
     vapidKey: firebaseMessagingConfig.vapidKey,
     serviceWorkerRegistration
@@ -192,10 +209,52 @@ export async function enableNotifications(uid) {
 
   if (!fcmToken) throw new Error("No se pudo obtener el token de notificaciones.");
 
-  await updateDoc(doc(getCollection("users"), uid), { fcmToken });
+  const profile = await getProfile(uid);
+  const userRef = doc(getCollection("users"), uid);
+  const tokenRef = doc(
+      collection(firestore, "users", uid, "fcmTokens"),
+      getFcmTokenId(fcmToken)
+  );
+
+  await setDoc(tokenRef, {
+    token: fcmToken,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    userAgent: navigator.userAgent || "",
+    role: profile?.role || ""
+  }, { merge: true });
+
+  await updateDoc(userRef, { fcmToken });
   return fcmToken;
 }
 
+function getFcmTokenId(token) {
+  return btoa(token).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function registerFirebaseMessagingWorker() {
+  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+    scope: "/firebase-cloud-messaging-push-scope"
+  });
+
+  if (registration.installing) {
+    await waitForServiceWorkerState(registration.installing, "activated");
+  } else if (registration.waiting) {
+    await waitForServiceWorkerState(registration.waiting, "activated");
+  }
+
+  return registration;
+}
+
+function waitForServiceWorkerState(worker, expectedState) {
+  if (!worker || worker.state === expectedState) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    worker.addEventListener("statechange", () => {
+      if (worker.state === expectedState) resolve();
+    });
+  });
+}
 export function enableDeliveryNotifications(uid) {
   return enableNotifications(uid);
 }
@@ -279,8 +338,51 @@ export function removeStore(storeId) {
   return deleteDoc(doc(getCollection("stores"), storeId));
 }
 
+function logSnapshotError(listenerName) {
+  return (error) => {
+    console.error(`[${listenerName}]`, error);
+  };
+}
+
 export function watchStores(callback) {
-  return onSnapshot(query(getCollection("stores"), orderBy("createdAt", "desc")), callback);
+  console.log("[watchStores] starting");
+  return onSnapshot(
+    query(getCollection("stores"), orderBy("createdAt", "desc")),
+    callback,
+    logSnapshotError("watchStores")
+  );
+}
+export function updateClientStatus(clientId, clientStatus) {
+  return updateDoc(doc(getCollection("users"), clientId), {
+    clientStatus
+  });
+}
+
+export async function registerClientPayment(client, payment) {
+  const paidAt = new Date();
+  const nextPaymentDueAt = payment.nextPaymentDueAt ? new Date(payment.nextPaymentDueAt) : null;
+  const amount = Number(payment.amount || 0);
+
+  await addDoc(getCollection("clientPayments"), {
+    clientId: client.id,
+    clientName: client.name || "",
+    amount,
+    method: payment.method || "manual",
+    status: "paid",
+    paidAt,
+    nextPaymentDueAt,
+    createdAt: serverTimestamp(),
+    createdBy: payment.createdBy || "",
+    notes: payment.notes || ""
+  });
+
+  return updateDoc(doc(getCollection("users"), client.id), {
+    clientStatus: "active",
+    clientPaymentStatus: "paid",
+    clientLastPaymentAt: paidAt,
+    clientNextPaymentDueAt: nextPaymentDueAt,
+    clientLastPaymentAmount: amount
+  });
 }
 export function saveSubscription({ name, price }) {
   return addDoc(getCollection("subscriptions"), {
@@ -333,65 +435,117 @@ export function renewSubscriptionPlan(delivery, plan) {
   });
 }
 
-export function watchClientOrders(uid, callback) {
+export function watchClientOrders(uid, callback, listenerName = "watchClientOrders") {
+  console.log(`[${listenerName}] starting`);
+  console.log("[watchClientOrders] uid:", uid);
+  const queryRef = query(getCollection("orders"), where("clientId", "==", uid), orderBy("createdAt", "desc"));
+  console.log("[watchClientOrders] query:", queryRef);
   return onSnapshot(
-    query(getCollection("orders"), where("clientId", "==", uid), orderBy("createdAt", "desc")),
-    callback
+    queryRef,
+    (snapshot) => {
+      console.log("[watchClientOrders] docs:", snapshot.size);
+      snapshot.forEach((doc) => {
+        console.log("[watchClientOrders]", doc.id, doc.data());
+      });
+      callback(snapshot);
+    },
+    logSnapshotError(listenerName)
   );
 }
 
 export function watchAvailableOrders(callback) {
+  console.log("[watchAvailableOrders] starting");
   return onSnapshot(
     query(getCollection("orders"), where("status", "==", "new"), orderBy("createdAt", "desc")),
-    callback
+    callback,
+    logSnapshotError("watchAvailableOrders")
   );
 }
 
-export function watchDeliveryOrders(uid, callback) {
+export function watchDeliveryOrders(uid, callback, listenerName = "watchDeliveryOrders") {
+  console.log(`[${listenerName}] starting`);
   return onSnapshot(
     query(getCollection("orders"), where("deliveryId", "==", uid), orderBy("createdAt", "desc")),
-    callback
+    callback,
+    logSnapshotError(listenerName)
   );
 }
 
 export function watchChatOrders(profile, callback) {
   if (profile.role === "cliente") {
-    return watchClientOrders(profile.id, callback);
+    return watchClientOrders(profile.id, callback, "watchChatOrders:cliente");
   }
 
   if (profile.role === "delivery") {
-    return watchDeliveryOrders(profile.id, callback);
+    return watchDeliveryOrders(profile.id, callback, "watchChatOrders:delivery");
   }
 
-  return onSnapshot(query(getCollection("orders"), orderBy("createdAt", "desc"), limit(60)), callback);
+  console.log("[watchChatOrders:admin] starting");
+  return onSnapshot(
+    query(getCollection("orders"), orderBy("createdAt", "desc"), limit(60)),
+    callback,
+    logSnapshotError("watchChatOrders:admin")
+  );
 }
 
 
 
 export function watchMessages(orderId, callback) {
+  console.log("[watchMessages] starting");
   return onSnapshot(
     query(getCollection("messages"), where("orderId", "==", orderId), orderBy("createdAt", "asc")),
-    callback
+    callback,
+    logSnapshotError("watchMessages")
   );
 }
 
 export function watchUsers(callback) {
-  return onSnapshot(query(getCollection("users"), orderBy("createdAt", "desc")), callback);
+  console.log("[watchUsers] starting");
+  return onSnapshot(
+    query(getCollection("users"), orderBy("createdAt", "desc")),
+    callback,
+    logSnapshotError("watchUsers")
+  );
 }
 
+export function watchClients(callback) {
+  console.log("[watchClients] starting");
+  return onSnapshot(
+    query(getCollection("users"), where("role", "==", "cliente"), orderBy("createdAt", "desc")),
+    (snapshot) => {
+      console.log("[watchClients] docs:", snapshot.size);
+      callback(snapshot);
+    },
+    (error) => {
+      console.error("[watchClients]", error);
+    }
+  );
+}
 export function watchDeliveries(callback) {
+  console.log("[watchDeliveries] starting");
   return onSnapshot(
     query(getCollection("users"), where("role", "==", "delivery")),
-    callback
+    callback,
+    logSnapshotError("watchDeliveries")
   );
 }
 
 export function watchAllOrders(callback) {
-  return onSnapshot(query(getCollection("orders"), orderBy("createdAt", "desc"), limit(100)), callback);
+  console.log("[watchAllOrders] starting");
+  return onSnapshot(
+    query(getCollection("orders"), orderBy("createdAt", "desc"), limit(100)),
+    callback,
+    logSnapshotError("watchAllOrders")
+  );
 }
 
 export function watchSubscriptions(callback) {
-  return onSnapshot(query(getCollection("subscriptions"), orderBy("createdAt", "desc")), callback);
+  console.log("[watchSubscriptions] starting");
+  return onSnapshot(
+    query(getCollection("subscriptions"), orderBy("createdAt", "desc")),
+    callback,
+    logSnapshotError("watchSubscriptions")
+  );
 }
 
 export async function adminExists() {
@@ -417,8 +571,4 @@ function toDate(value) {
   if (!value) return null;
   return value.toDate ? value.toDate() : new Date(value);
 }
-
-
-
-
 

@@ -1,4 +1,4 @@
-﻿import { el, emptyState } from "./dom.js";
+import { el, emptyState } from "./dom.js";
 import { formatDate, formatMoney, statusLabels } from "./format.js";
 import { state } from "./state.js";
 
@@ -30,6 +30,12 @@ const orderTabState = {
   client: "active",
   delivery: "available",
   admin: "active",
+};
+
+const paymentMethodLabels = {
+  cash: "Efectivo",
+  transfer: "Transferencia",
+  mercadopago: "Mercado Pago"
 };
 
 let deliveryOrderCache = [];
@@ -123,6 +129,29 @@ export function renderPanel(panel) {
 }
 
 
+function renderClientStatusNotice(profile) {
+  if (!el.clientStatusNotice) return;
+  const status = profile.clientStatus || "active";
+  const isClient = profile.role === "cliente";
+  const isPendingPayment = isClient && status === "pending_payment";
+  const isBlocked = isClient && status === "blocked";
+  const shouldShow = isPendingPayment || isBlocked;
+
+  el.clientStatusNotice.classList.toggle("hidden", !shouldShow);
+  if (isPendingPayment) {
+    el.clientStatusNotice.innerHTML = `
+      <strong>🔒 Tu cuenta aún no está habilitada.</strong><br />
+      Para comenzar a utilizar ALTOQUE debés comunicarte con el administrador y realizar el pago correspondiente.<br />
+      Una vez confirmado el pago, tu cuenta será activada y podrás comenzar a crear pedidos.
+    `;
+  } else if (isBlocked) {
+    el.clientStatusNotice.textContent = "Tu cuenta no está habilitada para crear pedidos. Comunicate con el administrador.";
+  }
+
+  if (el.clientStatusWhatsappBtn) {
+    el.clientStatusWhatsappBtn.classList.toggle("hidden", !isPendingPayment);
+  }
+}
 function renderClientNotificationState(profile) {
   if (!el.clientNotificationsBtn) return;
   const isClient = profile.role === "cliente";
@@ -418,11 +447,18 @@ export function renderMessages(messages) {
   }
 
   messages.forEach((message) => {
+    const senderProfile = getUserProfile(message.senderId) || {
+      name: message.senderName,
+      photoURL: ""
+    };
     const item = document.createElement("div");
     item.className = `message ${message.senderId === state.profile?.id ? "self" : ""}`;
     item.innerHTML = `
-      <div>${escapeText(message.text)}</div>
-      <small>${escapeText(message.senderName || "Usuario")} · ${formatDate(message.createdAt)}</small>
+      ${avatarMarkup(senderProfile, "avatar-sm message-avatar")}
+      <div class="message-content">
+        <div>${escapeText(message.text)}</div>
+        <small>${escapeText(message.senderName || senderProfile.name || "Usuario")} · ${formatDate(message.createdAt)}</small>
+      </div>
     `;
     el.messagesList.appendChild(item);
   });
@@ -445,6 +481,50 @@ export function renderAdminUsers(users, handlers) {
   el.statUsers.textContent = users.length;
 }
 
+export function renderAdminClients(users = [], handlers = {}) {
+  if (!el.clientAdminRows || !el.clientAdminCount) return;
+  const clients = users.filter((user) => user.role === "cliente");
+  el.clientAdminRows.innerHTML = "";
+
+  if (!clients.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="6">${emptyState("Todavía no hay clientes registrados.").outerHTML}</td>`;
+    el.clientAdminRows.appendChild(row);
+  }
+
+  clients.forEach((client) => {
+    const row = document.createElement("tr");
+    const clientStatus = getClientStatus(client);
+    const paymentStatus = getClientPaymentStatus(client);
+    row.innerHTML = `
+      <td>
+        <div class="subscription-delivery-name">
+          ${avatarMarkup(client, "avatar-sm")}
+          <div>
+            <strong>${escapeText(client.name || "Cliente")}</strong>
+            <small>${escapeText(client.email || "Sin correo")}</small>
+          </div>
+        </div>
+      </td>
+      <td><span class="subscription-status ${clientStatus.className}">${clientStatus.label}</span></td>
+      <td><span class="subscription-status ${paymentStatus.className}">${paymentStatus.label}</span></td>
+      <td>${client.clientLastPaymentAt ? `${formatDate(client.clientLastPaymentAt)} · ${formatMoney(client.clientLastPaymentAmount)}` : "Sin pagos"}</td>
+      <td>${client.clientNextPaymentDueAt ? formatDate(client.clientNextPaymentDueAt) : "Sin definir"}</td>
+      <td></td>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+    actions.appendChild(actionButton("Activo", "button button-secondary", () => handlers.updateClientStatus?.(client, "active")));
+    actions.appendChild(actionButton("Pendiente", "button button-secondary", () => handlers.updateClientStatus?.(client, "pending_payment")));
+    actions.appendChild(actionButton("Bloquear", "button button-danger", () => handlers.updateClientStatus?.(client, "blocked")));
+    actions.appendChild(actionButton("Registrar pago", "button button-primary", () => handlers.registerClientPayment?.(client)));
+    row.querySelector("td:last-child").appendChild(actions);
+    el.clientAdminRows.appendChild(row);
+  });
+
+  el.clientAdminCount.textContent = `${clients.length} ${clients.length === 1 ? "cliente" : "clientes"}`;
+}
 export function renderAdminOrders(orders = [], handlers, platformFee) {
   const active = orders.filter(isActiveOrder);
   const completed = orders.filter(isCompletedOrder);
@@ -545,6 +625,16 @@ function storeCard(store, handlers, isAdmin) {
   return card;
 }
 
+
+function getUserProfile(uid) {
+  if (!uid) return null;
+  if (state.profile?.id === uid) return state.profile;
+  return state.userProfiles?.[uid] || state.deliveryProfiles?.[uid] || null;
+}
+
+function profileInline(user, label) {
+  return `<div class="accepted-delivery">${avatarMarkup(user, "avatar-sm")}<span>${escapeText(label)}</span></div>`;
+}
 function normalizeWhatsapp(value) {
   return String(value || "").replace(/\D/g, "");
 }
@@ -606,6 +696,25 @@ export function renderSubscriptions(users, subscriptions, handlers) {
   el.subscriptionCount.textContent = `${deliveries.length} ${deliveries.length === 1 ? "delivery" : "deliveries"}`;
 }
 
+function getClientStatus(client) {
+  const status = client.clientStatus || "active";
+  const labels = {
+    active: { label: "🟢 Activo", className: "subscription-active" },
+    pending_payment: { label: "🟡 Pendiente de pago", className: "subscription-warning" },
+    blocked: { label: "🔴 Bloqueado", className: "subscription-expired" }
+  };
+  return labels[status] || { label: escapeText(status), className: "subscription-none" };
+}
+
+function getClientPaymentStatus(client) {
+  const status = client.clientPaymentStatus || "unpaid";
+  const labels = {
+    paid: { label: "🟢 Pagado", className: "subscription-active" },
+    unpaid: { label: "⚪ Sin pago", className: "subscription-none" },
+    overdue: { label: "🔴 Vencido", className: "subscription-expired" }
+  };
+  return labels[status] || { label: escapeText(status), className: "subscription-none" };
+}
 function getSubscriptionStatus(delivery) {
   if (!delivery.subscriptionPlanId || !delivery.subscriptionExpiresAt) {
     return { label: "⚪ Sin plan", className: "subscription-none" };
@@ -681,38 +790,68 @@ function toDate(value) {
 }
 
 function renderOrderList(container, orders, emptyText, context, handlers, options = {}) {
+  if (!container) return;
   container.innerHTML = "";
   if (!orders.length) {
     container.appendChild(emptyState(emptyText));
     return;
   }
 
-  orders.forEach((order) => container.appendChild(orderCard(order, context, handlers, options)));
+  orders.forEach((order) => {
+    try {
+      container.appendChild(orderCard(order, context, handlers, options));
+    } catch (error) {
+      console.error("[renderOrderList] No se pudo renderizar pedido", order?.id, error, order);
+    }
+  });
+
+  if (!container.children.length) {
+    container.appendChild(emptyState("No pudimos mostrar estos pedidos. Revisá la consola para ver el detalle."));
+  }
 }
 
-function orderCard(order, context, handlers, options) {
-  
+function orderCard(order = {}, context, handlers, options = {}) {
   const card = document.createElement("article");
   card.className = "order-card";
-  const status = statusLabels[order.status] || order.status;
+  const normalizedStatus = normalizeOrderStatus(order.status);
+  const status = statusLabels[normalizedStatus] || statusLabels[order.status] || order.status || "Nuevo";
   const deliveryProfile = order.deliveryId
-    ? state.deliveryProfiles?.[order.deliveryId] || (state.profile?.id === order.deliveryId ? state.profile : null)
+    ? getUserProfile(order.deliveryId) || { name: order.deliveryName, photoURL: "" }
     : null;
-  const deliveryAvatar = order.deliveryId
-    ? `<div class="accepted-delivery">${avatarMarkup(deliveryProfile || {
-      name: order.deliveryName,
-      photoURL: ""
-    }, "avatar-sm")}<span>Delivery aceptado: ${escapeText(order.deliveryName || "Sin asignar")}</span></div>`
+  const clientProfile = getUserProfile(order.clientId) || {
+    name: order.clientName,
+    photoURL: ""
+  };
+  const deliveryAvatar = deliveryProfile
+    ? profileInline(deliveryProfile, `Delivery aceptado: ${order.deliveryName || deliveryProfile.name || "Sin asignar"}`)
+    : "";
+  const clientAvatar = context === "delivery" || context === "deliveryMine"
+    ? profileInline(clientProfile, `Cliente: ${order.clientName || clientProfile.name || "Cliente"}`)
+    : "";
+  const instructions = String(order.description || "").trim();
+  const instructionsText = instructions || "💬 El cliente no dejó instrucciones adicionales.";
+  const paymentMethodKey = typeof order.paymentMethod === "string" ? order.paymentMethod : "";
+  const paymentMethod = paymentMethodLabels[paymentMethodKey] || paymentMethodKey || "Efectivo";
+  const imageUrl = typeof order.imageUrl === "string" ? order.imageUrl.trim() : "";
+  const orderImage = imageUrl
+    ? `<a class="order-image-link" href="${escapeText(imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir imagen del pedido en grande"><img src="${escapeText(imageUrl)}" alt="Imagen adjunta al pedido" loading="lazy" /></a>`
     : "";
   card.innerHTML = `
     <div class="card-title">
-      <strong>${escapeText(order.category)} · ${escapeText(order.description)}</strong>
+      <strong>${escapeText(order.category || "Mandado")}</strong>
       <span class="tag">${escapeText(status)}</span>
     </div>
     ${deliveryAvatar}
+    ${clientAvatar}
+    <div class="order-instructions-card">
+      <h4>📋 ¿Qué necesitás que hagamos por vos?</h4>
+      <p>${escapeText(instructionsText)}</p>
+    </div>
+    ${orderImage}
     <div class="meta-grid">
       <span>Entrega: ${escapeText(order.address)}</span>
       <span>Prioridad: ${escapeText(order.priority || "normal")}</span>
+      <span>Método de pago: ${escapeText(paymentMethod)}</span>
       <span>Cliente: ${escapeText(order.clientName || "Cliente")}</span>
       <span>Delivery: ${escapeText(order.deliveryName || "Sin asignar")}</span>
       <span>Fecha: ${formatDate(order.createdAt)}</span>
@@ -730,10 +869,10 @@ function orderCard(order, context, handlers, options) {
 
   if (context === "cliente") {
     actions.appendChild(actionButton("Chat", "button button-secondary", () => handlers.openChat(order)));
-    if (order.status === "new") {
+    if (isAvailableOrder(order)) {
       actions.appendChild(actionButton("Cancelar", "button button-danger", () => handlers.cancel(order)));
     }
-    if (order.status === "completed" && order.rating == null) {
+    if (isCompletedOrder(order) && order.rating == null) {
       [5, 4, 3].forEach((rating) => {
         actions.appendChild(actionButton(`${rating} estrellas`, "button button-secondary", () => handlers.rate(order.id, rating)));
       });
@@ -746,17 +885,17 @@ function orderCard(order, context, handlers, options) {
 
   if (context === "deliveryMine") {
     actions.appendChild(actionButton("Chat", "button button-secondary", () => handlers.openChat(order)));
-    if (order.status === "accepted") {
+    if (["accepted", "aceptado", "assigned", "asignado", "taken", "tomado"].includes(normalizedStatus)) {
       actions.appendChild(actionButton("En camino", "button button-primary", () => handlers.mark(order.id, "in_progress")));
     }
-    if (order.status === "accepted" || order.status === "in_progress") {
+    if (isDeliveryInProgressOrder(order)) {
       actions.appendChild(actionButton("Completar", "button button-primary", () => handlers.mark(order.id, "completed")));
     }
   }
 
   if (context === "admin") {
     actions.appendChild(actionButton("Chat", "button button-secondary", () => handlers.openChat(order)));
-    if (order.status !== "cancelled" && order.status !== "completed") {
+    if (!isCancelledOrder(order) && !isCompletedOrder(order)) {
       actions.appendChild(actionButton("Cancelar", "button button-danger", () => handlers.mark(order.id, "cancelled")));
     }
   }
@@ -852,24 +991,4 @@ function getInitial(name = "") {
   const initial = String(name).trim().charAt(0) || "A";
   return escapeText(initial.toUpperCase());
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

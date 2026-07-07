@@ -31,6 +31,45 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    function hasValidOrderImageUrl() {
+      return !("imageUrl" in request.resource.data) || request.resource.data.imageUrl is string;
+    }
+
+    function hasValidOrderPaymentMethod() {
+      return !("paymentMethod" in request.resource.data) ||
+        request.resource.data.paymentMethod in ["cash", "transfer", "mercadopago"];
+    }
+
+    function canClientCreateOrders() {
+      return !("clientStatus" in userDoc().data) ||
+        userDoc().data.clientStatus == "active";
+    }
+
+    function isClientCreateOrder() {
+      return signedIn() &&
+        canClientCreateOrders() &&
+        request.resource.data.clientId == request.auth.uid &&
+        hasValidOrderPaymentMethod() &&
+        hasValidOrderImageUrl() &&
+        request.resource.data.keys().hasOnly([
+          "clientId",
+          "clientName",
+          "category",
+          "priority",
+          "description",
+          "address",
+          "notes",
+          "paymentMethod",
+          "imageUrl",
+          "status",
+          "deliveryId",
+          "deliveryName",
+          "rating",
+          "createdAt",
+          "updatedAt"
+        ]);
+    }
+
     function isClientCancelOrder() {
       return signedIn() &&
         resource.data.clientId == request.auth.uid &&
@@ -73,11 +112,16 @@ service cloud.firestore {
       allow read: if signedIn();
       allow update: if isAdmin() || request.auth.uid == userId;
       allow delete: if false;
+
+      match /fcmTokens/{tokenId} {
+        allow read: if isAdmin() || request.auth.uid == userId;
+        allow create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
     }
 
     match /orders/{orderId} {
-      allow create: if signedIn() && request.resource.data.clientId == request.auth.uid;
-      allow read: if signedIn();
+      allow create: if isClientCreateOrder();
+      allow get, list: if signedIn();
       allow update: if isAdmin() || isClientCancelOrder() || isClientRateOrder() || isOrderChatMetadataUpdate() || isDeliveryWorkOrderUpdate();
       allow delete: if false;
     }
@@ -87,10 +131,16 @@ service cloud.firestore {
       allow read: if signedIn();
       allow update, delete: if false;
     }
-
+    match /stores/{storeId} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
     match /subscriptions/{subscriptionId} {
       allow read: if signedIn();
       allow write: if isAdmin();
+    }
+    match /clientPayments/{paymentId} {
+      allow create, read, update, delete: if isAdmin();
     }
   }
 }

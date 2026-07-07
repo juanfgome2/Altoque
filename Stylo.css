@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --green: #16a34a;
   --green-strong: #15803d;
   --green-soft: #dcfce7;
@@ -1277,4 +1277,149 @@ input[type="radio"] {
 
 .chat-item.unread strong {
   color: var(--danger);
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.message.self {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  flex: 0 0 auto;
+}
+
+.message-content {
+  min-width: 0;
+}
+.order-instructions-card {
+  background: #f0fdf4;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.order-instructions-card h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.order-instructions-card p {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.06rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.order-image-field {
+  align-content: start;
+}
+
+.order-image-field input[type="file"] {
+  display: none;
+}
+
+.order-image-button {
+  justify-content: center;
+  width: 100%;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.order-image-field small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.order-image-link {
+  display: block;
+  width: min(220px, 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.order-image-link img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.order-image-link:hover img {
+  transform: scale(1.03);
+}
+.optional-photo-section {
+  display: grid;
+  gap: 10px;
+}
+
+.optional-photo-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--green-strong);
+  font-weight: 800;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.optional-photo-toggle span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.order-image-panel {
+  border: 1px dashed rgba(22, 163, 74, 0.35);
+  background: #f8fdf9;
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  animation: revealOptionalPhoto 0.18s ease-out;
+}
+
+.optional-photo-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.order-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.order-image-preview img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+}
+
+@keyframes revealOptionalPhoto {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

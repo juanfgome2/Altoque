@@ -25,6 +25,7 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
+  deleteToken,
   getMessaging,
   getToken,
   onMessage
@@ -72,6 +73,7 @@ export const authApi = {
 };
 
 export const messagingApi = {
+  deleteToken,
   getMessaging,
   getToken,
   onMessage

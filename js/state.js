@@ -2,7 +2,10 @@
   authUser: null,
   profile: null,
   orders: [],
+  availableOrders: [],
+  deliveryOrders: [],
   deliveryProfiles: {},
+  userProfiles: {},
   activePanel: "landing",
   activeChatOrderId: null,
   authReady: false,
@@ -23,5 +26,4 @@ export function clearMessageListener() {
     state.messageListener = null;
   }
 }
-
 

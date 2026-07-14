@@ -151,7 +151,7 @@ function bindForms() {
   el.registerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!requireServices()) return;
-    const role = document.querySelector("input[name='registerRole']:checked").value;
+    const role = document.querySelector("input[name='registerRole']:checked").value.trim();
     const payload = {
       name: document.getElementById("registerName").value.trim(),
       email: document.getElementById("registerEmail").value.trim(),
@@ -390,6 +390,39 @@ function bindForms() {
       showToast(error.message);
     }
   });
+
+  if (el.chatImageBtn && el.chatImageInput) {
+    el.chatImageBtn.addEventListener("click", () => {
+      if (!state.activeChatOrderId || el.chatImageBtn.disabled) return;
+      el.chatImageInput.click();
+    });
+
+    el.chatImageInput.addEventListener("change", async () => {
+      if (!requireServices() || !state.activeChatOrderId || !state.profile) return;
+      const file = el.chatImageInput.files && el.chatImageInput.files[0];
+      el.chatImageInput.value = "";
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        showToast("Solo podés enviar imágenes.");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("La imagen excede el tamaño máximo permitido de 5 MB.");
+        return;
+      }
+
+      try {
+        setChatImageUploading(true);
+        await services.sendImageMessage(state.activeChatOrderId, state.profile, file);
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        setChatImageUploading(false);
+      }
+    });
+  }
 
   if (el.subscriptionModalClose && el.subscriptionModal) {
     el.subscriptionModalClose.addEventListener("click", () => {
@@ -671,6 +704,14 @@ async function rateCompletedOrder(orderId, rating) {
   }
 }
 
+function setChatImageUploading(isUploading) {
+  if (el.chatUploadStatus) {
+    el.chatUploadStatus.classList.toggle("hidden", !isUploading);
+  }
+  if (el.chatImageBtn) {
+    el.chatImageBtn.disabled = isUploading || !state.activeChatOrderId;
+  }
+}
 async function openChat(order) {
   state.activeChatOrderId = order.id;
   state.activePanel = "chat";
@@ -679,6 +720,7 @@ async function openChat(order) {
   el.chatSubtitle.textContent = `${order.clientName || "Cliente"} con ${order.deliveryName || "delivery sin asignar"}`;
   el.messageInput.disabled = false;
   el.sendMessageBtn.disabled = false;
+  if (el.chatImageBtn) el.chatImageBtn.disabled = false;
   clearMessageListener();
   if (!requireServices()) return;
   markActiveChatRead(order.id);

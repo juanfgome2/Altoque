@@ -80,6 +80,9 @@ export function renderDashboard(profile, activePanel) {
   renderNavigation(profile, activePanel);
   el.clientRankingSidebar.classList.toggle("hidden", profile.role !== "cliente");
   renderPanel(activePanel);
+  console.log("[clientStatusNotice] renderDashboard profile:", profile?.role, profile?.clientStatus);
+  renderClientStatusNotice(profile);
+  console.log("[clientStatusNotice] renderDashboard after:", profile?.role, profile?.clientStatus);
   renderClientNotificationState(profile);
   renderDeliveryNotice(profile);
 }
@@ -130,26 +133,38 @@ export function renderPanel(panel) {
 
 
 function renderClientStatusNotice(profile) {
+  console.log("[clientStatusNotice] running:", profile?.role, profile?.clientStatus);
+  console.log("[clientStatusNotice] elements:", !!el.clientStatusNotice, !!el.clientStatusWhatsappBtn, !!el.orderForm);
   if (!el.clientStatusNotice) return;
   const status = profile.clientStatus || "active";
   const isClient = profile.role === "cliente";
   const isPendingPayment = isClient && status === "pending_payment";
   const isBlocked = isClient && status === "blocked";
   const shouldShow = isPendingPayment || isBlocked;
+  const shouldDisableOrderForm = isPendingPayment || isBlocked;
+  console.log("[clientStatusNotice] branch:", isPendingPayment ? "pending_payment" : isBlocked ? "blocked" : "active");
 
   el.clientStatusNotice.classList.toggle("hidden", !shouldShow);
   if (isPendingPayment) {
     el.clientStatusNotice.innerHTML = `
       <strong>🔒 Tu cuenta aún no está habilitada.</strong><br />
-      Para comenzar a utilizar ALTOQUE debés comunicarte con el administrador y realizar el pago correspondiente.<br />
-      Una vez confirmado el pago, tu cuenta será activada y podrás comenzar a crear pedidos.
+      Para comenzar a utilizar ALTOQUE, comunicate con el administrador y realizá el pago correspondiente.<br />
+      Una vez confirmado el pago, tu cuenta será activada.
     `;
   } else if (isBlocked) {
-    el.clientStatusNotice.textContent = "Tu cuenta no está habilitada para crear pedidos. Comunicate con el administrador.";
+    el.clientStatusNotice.textContent = "Tu cuenta está bloqueada. Comunicate con el administrador.";
   }
 
   if (el.clientStatusWhatsappBtn) {
+    el.clientStatusWhatsappBtn.textContent = "📲 Contactar por WhatsApp";
     el.clientStatusWhatsappBtn.classList.toggle("hidden", !isPendingPayment);
+  }
+
+  if (el.orderForm) {
+    el.orderForm.classList.toggle("hidden", shouldDisableOrderForm);
+    el.orderForm.querySelectorAll("input, select, textarea, button").forEach((field) => {
+      field.disabled = shouldDisableOrderForm;
+    });
   }
 }
 function renderClientNotificationState(profile) {
@@ -453,10 +468,13 @@ export function renderMessages(messages) {
     };
     const item = document.createElement("div");
     item.className = `message ${message.senderId === state.profile?.id ? "self" : ""}`;
+    const messageBody = message.type === "image" && message.imageUrl
+      ? `<a href="${escapeText(message.imageUrl)}" target="_blank" rel="noopener"><img class="chat-image-message" src="${escapeText(message.imageUrl)}" alt="Imagen enviada por chat" /></a>`
+      : `<div>${escapeText(message.text || "")}</div>`;
     item.innerHTML = `
       ${avatarMarkup(senderProfile, "avatar-sm message-avatar")}
       <div class="message-content">
-        <div>${escapeText(message.text)}</div>
+        ${messageBody}
         <small>${escapeText(message.senderName || senderProfile.name || "Usuario")} · ${formatDate(message.createdAt)}</small>
       </div>
     `;
@@ -571,11 +589,6 @@ export function renderStores(stores = [], handlers = {}) {
   if (el.storesList) {
     renderStoreList(el.storesList, visibleStores, handlers, isAdmin, "Todavía no hay comercios cargados.");
   }
-
-  if (el.clientStoresPreview) {
-    renderStoreList(el.clientStoresPreview, activeStores.slice(0, 4), handlers, false, "Todavía no hay comercios cargados.");
-  }
-
   if (el.storeCount) {
     el.storeCount.textContent = `${activeStores.length} ${activeStores.length === 1 ? "comercio" : "comercios"}`;
   }

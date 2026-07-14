@@ -28,18 +28,28 @@ export function watchAuth(callback, errorCallback) {
 }
 
 export async function registerAccount({ name, email, password, role }) {
+  const normalizedRole = String(role || "").trim();
   const credential = await authApi.createUserWithEmailAndPassword(auth, email, password);
-  const status = role === "delivery" ? "pending" : "active";
-  await setDoc(doc(getCollection("users"), credential.user.uid), {
+  const status = normalizedRole === "delivery" ? "pending" : "active";
+  const profile = {
     name,
     email,
-    role,
+    role: normalizedRole,
     status,
     available: false,
     suspended: false,
-    ...(role === "delivery" ? { averageRating: 0, totalRatings: 0 } : {}),
+    ...(normalizedRole === "delivery" ? { averageRating: 0, totalRatings: 0 } : {}),
+    ...(normalizedRole === "cliente" ? {
+      clientStatus: "pending_payment",
+      clientPaymentStatus: "unpaid",
+      clientLastPaymentAt: null,
+      clientNextPaymentDueAt: null,
+      clientLastPaymentAmount: null
+    } : {}),
     createdAt: serverTimestamp()
-  });
+  };
+
+  await setDoc(doc(getCollection("users"), credential.user.uid), profile);
   return credential.user;
 }
 
@@ -195,9 +205,16 @@ export async function enableNotifications(uid) {
     throw new Error("Este navegador no admite notificaciones push.");
   }
 
-  const permission = await Notification.requestPermission();
+  if (Notification.permission === "denied") {
+    throw new Error("Las notificaciones están bloqueadas en este navegador. Activálas desde la configuración del sitio.");
+  }
+
+  const permission = Notification.permission === "granted"
+    ? "granted"
+    : await Notification.requestPermission();
+
   if (permission !== "granted") {
-    throw new Error("Necesitás permitir las notificaciones para recibir pedidos.");
+    throw new Error("Necesitás permitir las notificaciones para recibir avisos de ALTOQUE.");
   }
 
   const messaging = messagingApi.getMessaging(firebaseApp);
@@ -303,6 +320,55 @@ export async function sendMessage(orderId, sender, text) {
     lastMessageText: text,
     updatedAt: serverTimestamp()
   });
+}
+
+export async function sendImageMessage(orderId, sender, file) {
+  if (!file || !file.type.startsWith("image/")) {
+    throw new Error("Solo podés enviar imágenes.");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("La imagen excede el tamaño máximo permitido de 5 MB.");
+  }
+
+  const messageRef = doc(getCollection("messages"));
+  const extension = getImageExtension(file);
+  const imagePath = `chatImages/${orderId}/${messageRef.id}.${extension}`;
+  const imageRef = storageApi.ref(storage, imagePath);
+
+  await storageApi.uploadBytes(imageRef, file, { contentType: file.type });
+  const imageUrl = await storageApi.getDownloadURL(imageRef);
+
+  await setDoc(messageRef, {
+    orderId,
+    senderId: sender.id,
+    senderName: sender.name,
+    senderRole: sender.role,
+    type: "image",
+    imageUrl,
+    imagePath,
+    text: "",
+    createdAt: serverTimestamp()
+  });
+
+  return updateDoc(doc(getCollection("orders"), orderId), {
+    lastMessageAt: serverTimestamp(),
+    lastMessageSenderId: sender.id,
+    lastMessageText: "📷 Imagen",
+    updatedAt: serverTimestamp()
+  });
+}
+
+function getImageExtension(file) {
+  const extensionByType = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "image/heic": "heic",
+    "image/heif": "heif"
+  };
+  return extensionByType[file.type] || "jpg";
 }
 
 export function markChatRead(orderId, uid) {

@@ -241,15 +241,6 @@
               </label>
               <button class="button button-primary" type="submit">Crear pedido</button>
             </form>
-            <div class="panel-section stores-preview-section">
-              <div class="section-title">
-                <div>
-                  <h3>Comercios</h3>
-                  <p class="meta">Consultá comercios útiles antes de crear tu pedido.</p>
-                </div>
-              </div>
-              <div id="clientStoresPreview" class="card-grid"></div>
-            </div>
             <div class="panel-section client-orders-section">
               <div class="section-title client-active-orders-title">
                 <h3>Mis pedidos</h3>
@@ -365,8 +356,11 @@
                 </div>
                 <div id="messagesList" class="messages-list"></div>
                 <form id="messageForm" class="message-form">
+                  <button id="chatImageBtn" class="button button-secondary chat-attach-button" type="button" disabled aria-label="Adjuntar imagen">📷</button>
+                  <input id="chatImageInput" class="sr-only" type="file" accept="image/*" />
                   <input id="messageInput" type="text" placeholder="Escribí un mensaje..." autocomplete="off" disabled required />
-                  <button id="sendMessageBtn" class="button button-primary" type="submit" disabled>Enviar</button>
+                  <button id="sendMessageBtn" class="button button-primary chat-send-button" type="submit" disabled aria-label="Enviar mensaje">➤</button>
+                  <span id="chatUploadStatus" class="chat-upload-status hidden">Subiendo imagen...</span>
                 </form>
               </div>
             </div>

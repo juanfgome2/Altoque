@@ -23,6 +23,8 @@ export const el = {
   toggleLoginPassword: document.getElementById("toggleLoginPassword"),
   forgotPasswordBtn: document.getElementById("forgotPasswordBtn"),
   registerForm: document.getElementById("registerForm"),
+  registerPassword: document.getElementById("registerPassword"),
+  toggleRegisterPassword: document.getElementById("toggleRegisterPassword"),
   clientPanel: document.getElementById("clientPanel"),
   clientNotificationsBtn: document.getElementById("clientNotificationsBtn"),
   clientStatusNotice: document.getElementById("clientStatusNotice"),

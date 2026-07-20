@@ -110,16 +110,21 @@ function bindForms() {
     }
   });
 
-  if (el.toggleLoginPassword && el.loginPassword) {
-    el.toggleLoginPassword.addEventListener("click", () => {
-      const shouldShowPassword = el.loginPassword.type === "password";
-      el.loginPassword.type = shouldShowPassword ? "text" : "password";
-      el.toggleLoginPassword.textContent = shouldShowPassword ? "🙈" : "👁️";
-      el.toggleLoginPassword.setAttribute("aria-label", shouldShowPassword ? "Ocultar contraseña" : "Mostrar contraseña");
-      el.toggleLoginPassword.setAttribute("aria-pressed", String(shouldShowPassword));
-      el.loginPassword.focus();
+  function setupPasswordToggle(toggle, password) {
+    if (!toggle || !password) return;
+
+    toggle.addEventListener("click", () => {
+      const shouldShowPassword = password.type === "password";
+      password.type = shouldShowPassword ? "text" : "password";
+      toggle.textContent = shouldShowPassword ? "🙈" : "👁️";
+      toggle.setAttribute("aria-label", shouldShowPassword ? "Ocultar contraseña" : "Mostrar contraseña");
+      toggle.setAttribute("aria-pressed", String(shouldShowPassword));
+      password.focus();
     });
   }
+
+  setupPasswordToggle(el.toggleLoginPassword, el.loginPassword);
+  setupPasswordToggle(el.toggleRegisterPassword, el.registerPassword);
 
   if (el.forgotPasswordBtn && el.loginEmail) {
     el.forgotPasswordBtn.addEventListener("click", async () => {

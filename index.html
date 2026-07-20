@@ -120,7 +120,10 @@
             </label>
             <label>
               Contraseña
-              <input id="registerPassword" type="password" minlength="6" autocomplete="new-password" required />
+              <span class="password-field">
+                <input id="registerPassword" type="password" minlength="6" autocomplete="new-password" required />
+                <button id="toggleRegisterPassword" class="password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">👁️</button>
+              </span>
             </label>
             <fieldset class="role-picker">
               <legend>Tipo de usuario</legend>
